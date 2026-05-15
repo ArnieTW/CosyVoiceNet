@@ -1,0 +1,90 @@
+NekoBot End User License Agreement
+
+Copyright (c) 2026 ArnieTW. All rights reserved.
+
+This license applies to the NekoBot application binaries, release packages,
+names, logos, icons, bundled NekoBot assets, and related non-documentation
+materials distributed with NekoBot releases.
+
+The public documentation website may be distributed under a separate license.
+That documentation license does not apply to the NekoBot application, binaries,
+source code, release packages, names, logos, icons, or application assets.
+
+1. Permission to Use
+
+You may download, install, and run an official NekoBot release for personal use,
+streaming, content creation, testing, and evaluation.
+
+2. Restrictions
+
+You may not:
+
+- copy, redistribute, sell, rent, lease, sublicense, or host NekoBot release
+  packages or binaries except with prior written permission from ArnieTW;
+- modify, adapt, translate, or create derivative works from NekoBot binaries,
+  logos, icons, or bundled NekoBot assets;
+- reverse engineer, decompile, disassemble, or attempt to derive source code
+  from NekoBot except where applicable law expressly permits it;
+- remove or alter copyright, license, attribution, or third-party notices;
+- use the NekoBot name, logo, icon, or branding in a way that suggests
+  endorsement, affiliation, or ownership without permission.
+
+Sharing links to official NekoBot release pages is allowed and encouraged.
+
+3. Ownership
+
+NekoBot is proprietary software. ArnieTW retains all rights, title, and
+interest in NekoBot that are not expressly granted by this license.
+
+4. Third-Party Components
+
+NekoBot may include or interoperate with third-party software, models, assets,
+and libraries. Those third-party materials remain governed by their own
+licenses, notices, and terms.
+
+NekoBot includes text-to-speech functionality powered by CosyVoice/CosyVoiceNet
+technology and acknowledges the FunAudioLLM CosyVoice project:
+https://github.com/FunAudioLLM/CosyVoice
+
+CosyVoice is distributed by FunAudioLLM under the Apache License 2.0. Nothing
+in this NekoBot license changes the license terms of CosyVoice or any other
+third-party component.
+
+5. Generated Content
+
+You are responsible for content you create, generate, display, or broadcast
+using NekoBot, including overlays, audio, images, text, scripts, and stream
+outputs. You must ensure that your use complies with applicable laws and the
+terms of any services or third-party tools connected to NekoBot.
+
+6. No Warranty
+
+NekoBot is provided "as is" and "as available", without warranties of any kind,
+express or implied, including warranties of merchantability, fitness for a
+particular purpose, non-infringement, availability, accuracy, or uninterrupted
+operation.
+
+7. Limitation of Liability
+
+To the maximum extent permitted by law, ArnieTW will not be liable for any
+direct, indirect, incidental, special, consequential, exemplary, or punitive
+damages, or for lost profits, lost revenue, lost data, business interruption,
+stream interruption, or system damage arising from or related to NekoBot or
+this license.
+
+8. Updates
+
+NekoBot may check for updates and may download update metadata from official
+release channels. Installing an update may replace application files while
+preserving user data and settings where supported.
+
+9. Termination
+
+This license terminates automatically if you violate its terms. Upon
+termination, you must stop using NekoBot and delete copies of NekoBot in your
+possession, except where retention is required by law.
+
+10. Contact
+
+For permission requests, licensing questions, or third-party notice concerns,
+contact ArnieTW through the official NekoBot release or documentation channels.

@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+artifacts/
+
+# IDE and user-specific files
+.vs/
+.idea/
+*.log
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local restore/runtime state
+.appdata/
+.nuget/
+models/
+cosyvoice.settings.json
