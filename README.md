@@ -57,50 +57,12 @@ For a CPU-only build:
 dotnet build CosyVoiceNet\CosyVoiceNet.csproj -p:TorchUseCuda=false
 ```
 
-## Generation Timings
+## Timings
 
-Benchmark hardware used:
-
-- CPU: AMD Ryzen 9 5900X 12-Core Processor, 24 logical processors.
-- GPU: NVIDIA GeForce RTX 5060 Ti, 16 GB VRAM, driver 595.79.
-- Runtime: Windows x64, .NET `net10.0`, TorchSharp `0.106.0`.
-- Benchmark date: 2026-05-15.
-
-Generation-only timings in seconds. Model load time and first-time saved-voice
-clone time are excluded. CPU 1 thread and CPU 8 threads are explicit runtime
-thread settings. CUDA uses the CUDA backend from the default Windows build.
-
-Test text:
-
-```text
-A comprehensive test to compare the TTS pipeline between original CosyVoice Python pipeline and the new C# Pipeline
-```
-
-TTS characters: 115. Prompt WAV:
-`CosyVoiceNet\asset\zero_shot_prompt.wav`, 3.48 seconds. Speaker policy:
-first available SFT/instruct speaker for non-clonable voices, and
-`zero_shot_prompt.wav` for clonable endpoints.
-
-| Model | Endpoint | Speaker | CPU 1 thread | CPU 8 threads | CUDA | Audio seconds |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| `Fun-CosyVoice3-0.5B` | `zero_shot` |  | 103.591 | 69.280 | 13.472 | 11.160 |
-| `Fun-CosyVoice3-0.5B` | `cross_lingual` |  | 65.653 | 40.051 | 45.774 | 7.160 |
-| `Fun-CosyVoice3-0.5B` | `instruct2` |  | 83.447 | 49.589 | 48.439 | 8.360 |
-| `Fun-CosyVoice3-0.5B` | `saved_zero_shot` |  | 127.600 | 65.133 | 60.687 | 11.160 |
-| `Fun-CosyVoice3-0.5B` | `saved_cross_lingual` |  | 84.272 | 40.208 | 48.688 | 7.160 |
-| `Fun-CosyVoice3-0.5B` | `saved_instruct2` |  | 95.728 | 46.970 | 51.667 | 8.360 |
-| `CosyVoice2-0.5B` | `zero_shot` |  | 97.715 | 62.149 | 73.678 | 11.680 |
-| `CosyVoice2-0.5B` | `cross_lingual` |  | 90.492 | 57.296 | 66.858 | 12.040 |
-| `CosyVoice2-0.5B` | `instruct2` |  | 52.317 | 38.133 | 67.619 | 7.320 |
-| `CosyVoice2-0.5B` | `saved_zero_shot` |  | 86.728 | 62.527 | 94.495 | 11.680 |
-| `CosyVoice2-0.5B` | `saved_cross_lingual` |  | 87.285 | 66.696 | 78.212 | 12.040 |
-| `CosyVoice2-0.5B` | `saved_instruct2` |  | 62.121 | 38.379 | 69.090 | 7.320 |
-| `CosyVoice-300M` | `zero_shot` |  | 172.879 | 74.114 | 204.735 | 7.755 |
-| `CosyVoice-300M` | `cross_lingual` |  | 132.209 | 62.094 | 178.128 | 8.150 |
-| `CosyVoice-300M` | `saved_zero_shot` |  | 178.791 | 66.419 | 216.309 | 7.755 |
-| `CosyVoice-300M` | `saved_cross_lingual` |  | 133.008 | 56.394 | 188.426 | 8.150 |
-| `CosyVoice-300M-SFT` | `sft` | `中文女` | 89.488 | 44.531 | 71.783 | 6.815 |
-| `CosyVoice-300M-Instruct` | `instruct` | `中文女` | 67.671 | 32.705 | 43.771 | 5.271 |
+Generation benchmarks and repeat-run stability checks live in
+[TIMINGS.md](./TIMINGS.md). The README keeps the project overview and usage
+examples focused, while the timing file can grow as more hardware, profiles, and
+models are tested.
 
 ## High-Level API
 
