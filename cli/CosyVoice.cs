@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -16,7 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CosyVoiceNet.Utils;
 using TorchSharp;
-using Utilities;
+using CosyVoiceNet.Utilities;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using static CosyVoiceNet.cli.CosyVoiceModel;
@@ -66,6 +65,8 @@ namespace CosyVoiceNet.cli
         public string LlmDevice => _model?.LlmDevice ?? Device;
         public string FlowDevice => _model?.FlowDevice ?? Device;
         public string HiftDevice => _model?.HiftDevice ?? Device;
+        public CosyVoiceBackend CampPlusOnnxBackend => _frontend?.CampPlusOnnxBackend ?? CosyVoiceBackend.Cpu;
+        public CosyVoiceBackend SpeechTokenizerOnnxBackend => _frontend?.SpeechTokenizerOnnxBackend ?? CosyVoiceBackend.Cpu;
         public int SampleRate => _sampleRate;
         public int SamplingTopK
         {
@@ -91,7 +92,8 @@ namespace CosyVoiceNet.cli
             _fp16 = fp16;
             EnsureModelDir(modelDir);
             Configs = LoadYamlConfig();
-            InitFrontend(Configs, modelLocalDir, SpeechTokenizerOnnx);
+            var onnxBackend = _runtimeOptions.OnnxBackend ?? backendSelection.ActiveBackend;
+            InitFrontend(Configs, modelLocalDir, SpeechTokenizerOnnx, onnxBackend);
             LoadSavedVoices();
             _sampleRate = Configs.TryGetValue("sample_rate", out var sr) ? Convert.ToInt32(sr) : 16000;
             InitModel(Configs, fp16, modelLocalDir, _requestedBackend);
@@ -112,7 +114,6 @@ namespace CosyVoiceNet.cli
             Common.SamplingBackend = activeBackend == CosyVoiceBackend.Cpu && options.SamplingBackend == CosyVoiceSamplingBackend.Cuda
                 ? CosyVoiceSamplingBackend.Cpu
                 : options.SamplingBackend;
-            TryApplyCpuProcessorAffinity(options.CpuProcessorAffinityMask, options.Logger);
 
             if (activeBackend != CosyVoiceBackend.Cpu)
                 return;
@@ -127,27 +128,6 @@ namespace CosyVoiceNet.cli
             else if (torch.get_num_interop_threads() > 1)
             {
                 TrySetTorchThreads(torch.set_num_interop_threads, 1, "CPU inter-op", options.Logger);
-            }
-        }
-
-        private static void TryApplyCpuProcessorAffinity(long? affinityMask, ICosyVoiceLogger? logger)
-        {
-            if (!affinityMask.HasValue || affinityMask.Value <= 0)
-                return;
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return;
-            }
-
-            try
-            {
-                Process.GetCurrentProcess().ProcessorAffinity = new IntPtr(affinityMask.Value);
-            }
-            catch (Exception ex)
-            {
-                CosyVoiceLog.Write(logger, CosyVoiceLogLevel.Warning, $"Unable to set CPU processor affinity mask 0x{affinityMask.Value:X}.", ex);
             }
         }
 
@@ -531,14 +511,13 @@ namespace CosyVoiceNet.cli
             if (Path.IsPathRooted(modelVer))
                 return modelVer;
 
-            if (IsUsableModelDir(modelVer))
-                return modelVer;
-
             if (modelVer.Contains('/') || modelVer.Contains('\\'))
             {
                 var normalized = modelVer.Replace('\\', '/').TrimEnd('/');
                 if (RemoteToLocalName.TryGetValue(normalized, out var localName))
                     return ResolveLocalModelName(localName);
+
+                return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, modelVer));
             }
 
             return ResolveLocalModelName(modelVer);
@@ -546,32 +525,7 @@ namespace CosyVoiceNet.cli
 
         private static string ResolveLocalModelName(string localName)
         {
-            var currentRelative = Path.Combine("./models", localName);
-            if (IsUsableModelDir(currentRelative))
-                return currentRelative;
-
-            return Path.Combine(FindWorkspaceRoot() ?? Directory.GetCurrentDirectory(), "models", localName);
-        }
-
-        private static string? FindWorkspaceRoot()
-        {
-            foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory }.Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                var dir = new DirectoryInfo(start);
-                while (dir != null)
-                {
-                    if (File.Exists(Path.Combine(dir.FullName, "NekoBot_LLM.slnx")) ||
-                        File.Exists(Path.Combine(dir.FullName, "cosyvoice.settings.json")) ||
-                        Directory.Exists(Path.Combine(dir.FullName, "CosyVoiceNet")))
-                    {
-                        return dir.FullName;
-                    }
-
-                    dir = dir.Parent;
-                }
-            }
-
-            return null;
+            return Path.Combine(AppContext.BaseDirectory, "models", localName);
         }
 
         private static readonly Dictionary<string, string> RemoteToLocalName = new(StringComparer.OrdinalIgnoreCase)
@@ -760,7 +714,7 @@ namespace CosyVoiceNet.cli
             return CosyVoiceNet.Utils.YamlLoader.Load(yamlPath, overrides);
         }
 
-        protected void InitFrontend(Dictionary<string, object> configs, string modelDir, string speechTokenizerOnnx)
+        protected void InitFrontend(Dictionary<string, object> configs, string modelDir, string speechTokenizerOnnx, CosyVoiceBackend onnxBackend)
         {
             _frontend = new CosyVoiceFrontEnd(
                 configs["get_tokenizer"] as Func<object>,
@@ -768,7 +722,9 @@ namespace CosyVoiceNet.cli
                 Path.Combine(modelDir, "campplus.onnx"),
                 Path.Combine(modelDir, speechTokenizerOnnx),
                 Path.Combine(modelDir, "spk2info.pt"),
-                configs.TryGetValue("allowed_special", out var allowed) ? allowed.ToString() : "all"
+                configs.TryGetValue("allowed_special", out var allowed) ? allowed.ToString() : "all",
+                onnxBackend,
+                _runtimeOptions.Logger
             );
             _frontend.Logger = _runtimeOptions.Logger;
             _frontend.TracePromptTrim = _runtimeOptions.TracePromptTrim;

@@ -375,6 +375,8 @@ namespace CosyVoiceNet
                 model.LlmDevice,
                 model.FlowDevice,
                 model.HiftDevice,
+                model.CampPlusOnnxBackend,
+                model.SpeechTokenizerOnnxBackend,
                 model.SampleRate,
                 samples,
                 samples / (double)model.SampleRate,
@@ -453,6 +455,8 @@ namespace CosyVoiceNet
                 model.LlmDevice,
                 model.FlowDevice,
                 model.HiftDevice,
+                model.CampPlusOnnxBackend,
+                model.SpeechTokenizerOnnxBackend,
                 model.SampleRate);
         }
 
@@ -647,8 +651,7 @@ namespace CosyVoiceNet
             QwenMlpBackend QwenMlpBackend,
             CosyVoiceSamplingBackend SamplingBackend,
             int? CpuThreads,
-            int? CpuInteropThreads,
-            long? CpuProcessorAffinityMask)
+            int? CpuInteropThreads)
         {
             public static RuntimeOptionsCacheKey From(CosyVoiceRuntimeOptions options, CosyVoiceBackend backend)
             {
@@ -661,13 +664,10 @@ namespace CosyVoiceNet
                     resolved.QwenMlpBackend,
                     resolved.SamplingBackend,
                     NormalizePositive(resolved.CpuThreads),
-                    NormalizePositive(resolved.CpuInteropThreads),
-                    NormalizePositive(resolved.CpuProcessorAffinityMask));
+                    NormalizePositive(resolved.CpuInteropThreads));
             }
 
             private static int? NormalizePositive(int? value) => value > 0 ? value : null;
-
-            private static long? NormalizePositive(long? value) => value > 0 ? value : null;
         }
 
         private readonly record struct ModelCacheKey(string Model, CosyVoiceBackend Backend, bool Fp16, RuntimeOptionsCacheKey RuntimeOptions);
@@ -842,6 +842,8 @@ namespace CosyVoiceNet
     /// <param name="LlmDevice">LLM component device.</param>
     /// <param name="FlowDevice">Flow component device.</param>
     /// <param name="HiftDevice">HiFT vocoder component device.</param>
+    /// <param name="CampPlusOnnxBackend">ONNX backend active for CAMPPlus speaker embedding extraction.</param>
+    /// <param name="SpeechTokenizerOnnxBackend">ONNX backend active for speech-token extraction.</param>
     /// <param name="SampleRate">Output sample rate.</param>
     /// <param name="Samples">Number of mono float32 samples.</param>
     /// <param name="DurationSeconds">Output duration in seconds.</param>
@@ -863,6 +865,8 @@ namespace CosyVoiceNet
         string LlmDevice,
         string FlowDevice,
         string HiftDevice,
+        CosyVoiceBackend CampPlusOnnxBackend,
+        CosyVoiceBackend SpeechTokenizerOnnxBackend,
         int SampleRate,
         int Samples,
         double DurationSeconds,
@@ -913,5 +917,7 @@ namespace CosyVoiceNet
         string LlmDevice,
         string FlowDevice,
         string HiftDevice,
+        CosyVoiceBackend CampPlusOnnxBackend,
+        CosyVoiceBackend SpeechTokenizerOnnxBackend,
         int SampleRate);
 }

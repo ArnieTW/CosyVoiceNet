@@ -4,7 +4,7 @@ using System.Linq;
 using TorchSharp;
 using static TorchSharp.torch;
 using Tensor = TorchSharp.torch.Tensor;
-using Utilities;
+using CosyVoiceNet.Utilities;
 
 namespace CosyVoiceNet
 {

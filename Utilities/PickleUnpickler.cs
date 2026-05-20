@@ -7,7 +7,7 @@ using Razorvine.Pickle;
 using System.Reflection;
 using System.Linq;
 
-namespace Utilities
+namespace CosyVoiceNet.Utilities
 {
     // Minimal unpickler for a focused subset of pickle opcodes used by torch.save(state_dict)
     // This does not aim to fully implement pickle but provides enough semantics to

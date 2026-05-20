@@ -205,6 +205,11 @@ namespace CosyVoiceNet.cli
         public CosyVoiceSamplingBackend SamplingBackend { get; set; } = CosyVoiceSamplingBackend.LogitsDevice;
 
         /// <summary>
+        /// Optional ONNX backend override. Leave null to use the active Torch backend.
+        /// </summary>
+        public CosyVoiceBackend? OnnxBackend { get; set; }
+
+        /// <summary>
         /// Torch CPU intra-op thread count. Leave null to keep Torch's current/default value.
         /// </summary>
         public int? CpuThreads { get; set; }
@@ -213,11 +218,6 @@ namespace CosyVoiceNet.cli
         /// Torch CPU inter-op thread count. Leave null to use CosyVoiceNet's low-latency CPU default.
         /// </summary>
         public int? CpuInteropThreads { get; set; }
-
-        /// <summary>
-        /// Optional process CPU affinity mask. This is process-wide and mainly useful for pinning to a preferred CCD.
-        /// </summary>
-        public long? CpuProcessorAffinityMask { get; set; }
 
         /// <summary>
         /// Optional diagnostics sink. Leave null for silent library behavior.
@@ -266,7 +266,6 @@ namespace CosyVoiceNet.cli
                 ResolveSamplingBackend(backend),
                 CpuThreads,
                 CpuInteropThreads,
-                CpuProcessorAffinityMask,
                 Logger,
                 Profiler,
                 TraceTextInput,
@@ -286,9 +285,9 @@ namespace CosyVoiceNet.cli
                 QwenAttentionBackend = QwenAttentionBackend,
                 QwenMlpBackend = QwenMlpBackend,
                 SamplingBackend = SamplingBackend,
+                OnnxBackend = OnnxBackend,
                 CpuThreads = CpuThreads,
                 CpuInteropThreads = CpuInteropThreads,
-                CpuProcessorAffinityMask = CpuProcessorAffinityMask,
                 Logger = Logger,
                 Profiler = Profiler,
                 TraceTextInput = TraceTextInput,
@@ -374,7 +373,6 @@ namespace CosyVoiceNet.cli
         CosyVoiceSamplingBackend SamplingBackend,
         int? CpuThreads,
         int? CpuInteropThreads,
-        long? CpuProcessorAffinityMask,
         ICosyVoiceLogger? Logger,
         ICosyVoiceProfiler? Profiler,
         bool TraceTextInput,

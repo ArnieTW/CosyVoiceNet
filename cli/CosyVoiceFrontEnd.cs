@@ -15,7 +15,7 @@ using System.Text.RegularExpressions;
 using Humanizer;
 using CosyVoice.Tokenizer;
 using System.Collections;
-using Utilities;
+using CosyVoiceNet.Utilities;
 
 namespace CosyVoiceNet.cli
 {
@@ -32,31 +32,37 @@ namespace CosyVoiceNet.cli
         public readonly string AllowedSpecial;
         public ICosyVoiceLogger? Logger { get; set; }
         public bool TracePromptTrim { get; set; }
+        public CosyVoiceBackend CampPlusOnnxBackend { get; }
+        public CosyVoiceBackend SpeechTokenizerOnnxBackend { get; }
 
         public CosyVoiceFrontEnd(Func<object> getTokenizer, Func<torch.Tensor, torch.Tensor> featExtractor,
                                  string campplusModel, string speechTokenizerModel,
-                                 string spk2info = null, string allowedSpecial = "all")
+                                 string spk2info = null, string allowedSpecial = "all",
+                                 CosyVoiceBackend onnxBackend = CosyVoiceBackend.Cpu,
+                                 ICosyVoiceLogger? logger = null)
         {
+            Logger = logger;
             _tokenizer = getTokenizer?.Invoke() ?? throw new ArgumentNullException(nameof(getTokenizer));
             _featExtractor = featExtractor ?? throw new ArgumentNullException(nameof(featExtractor));
             AllowedSpecial = allowedSpecial;
 
             // CampPlus optimizations in the .NET CPU runtime change speaker embeddings
             // noticeably, while the unoptimized graph matches Python ONNX Runtime.
-            var campplusOptions = new SessionOptions
-            {
-                GraphOptimizationLevel = GraphOptimizationLevel.ORT_DISABLE_ALL,
-                IntraOpNumThreads = 1,
-                ExecutionMode = ExecutionMode.ORT_SEQUENTIAL
-            };
-            var sessionOptions = new SessionOptions
-            {
-                GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
-                IntraOpNumThreads = 1,
-                ExecutionMode = ExecutionMode.ORT_SEQUENTIAL
-            };
-            _campplusSession = new InferenceSession(campplusModel, campplusOptions);
-            _speechTokenizerSession = new InferenceSession(speechTokenizerModel, sessionOptions);
+            _campplusSession = CreateOnnxSession(
+                campplusModel,
+                CreateCampPlusOptions,
+                onnxBackend,
+                "campplus",
+                out var campplusBackend);
+            CampPlusOnnxBackend = campplusBackend;
+
+            _speechTokenizerSession = CreateOnnxSession(
+                speechTokenizerModel,
+                CreateSpeechTokenizerOptions,
+                onnxBackend,
+                "speech_tokenizer",
+                out var speechTokenizerBackend);
+            SpeechTokenizerOnnxBackend = speechTokenizerBackend;
 
             // Load spk2info map
             if (!string.IsNullOrEmpty(spk2info) && File.Exists(spk2info))
@@ -70,6 +76,81 @@ namespace CosyVoiceNet.cli
                     CosyVoiceLog.Write(Logger, CosyVoiceLogLevel.Warning, "Failed to load spk2info.", ex);
                 }
             }
+        }
+
+        private static SessionOptions CreateCampPlusOptions()
+        {
+            EnsureOnnxRuntimeEnvironment();
+            return new SessionOptions
+            {
+                GraphOptimizationLevel = GraphOptimizationLevel.ORT_DISABLE_ALL,
+                IntraOpNumThreads = 1,
+                ExecutionMode = ExecutionMode.ORT_SEQUENTIAL
+            };
+        }
+
+        private static SessionOptions CreateSpeechTokenizerOptions()
+        {
+            EnsureOnnxRuntimeEnvironment();
+            return new SessionOptions
+            {
+                GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
+                IntraOpNumThreads = 1,
+                ExecutionMode = ExecutionMode.ORT_SEQUENTIAL
+            };
+        }
+
+        private static void EnsureOnnxRuntimeEnvironment()
+        {
+            _ = OrtEnv.Instance();
+        }
+
+        private InferenceSession CreateOnnxSession(
+            string modelPath,
+            Func<SessionOptions> createOptions,
+            CosyVoiceBackend requestedBackend,
+            string component,
+            out CosyVoiceBackend activeBackend)
+        {
+            if (requestedBackend == CosyVoiceBackend.Cuda)
+            {
+                try
+                {
+                    var cudaOptions = createOptions();
+                    cudaOptions.AppendExecutionProvider_CUDA(0);
+                    var session = new InferenceSession(modelPath, cudaOptions);
+                    activeBackend = CosyVoiceBackend.Cuda;
+                    CosyVoiceLog.Write(Logger, CosyVoiceLogLevel.Information, $"ONNX {component} session is using CUDA.", null, new Dictionary<string, string>
+                    {
+                        ["component"] = component,
+                        ["model"] = modelPath,
+                        ["backend"] = "cuda"
+                    });
+                    return session;
+                }
+                catch (Exception ex)
+                {
+                    CosyVoiceLog.Write(Logger, CosyVoiceLogLevel.Warning, $"ONNX {component} CUDA initialization failed. Falling back to CPU.", ex, new Dictionary<string, string>
+                    {
+                        ["component"] = component,
+                        ["model"] = modelPath,
+                        ["requested_backend"] = "cuda",
+                        ["fallback_backend"] = "cpu"
+                    });
+                    Console.WriteLine($"[CosyVoice] ONNX {component} CUDA initialization failed. Falling back to CPU. {ex.Message}");
+                }
+            }
+
+            var cpuOptions = createOptions();
+            var cpuSession = new InferenceSession(modelPath, cpuOptions);
+            activeBackend = CosyVoiceBackend.Cpu;
+            CosyVoiceLog.Write(Logger, CosyVoiceLogLevel.Debug, $"ONNX {component} session is using CPU.", null, new Dictionary<string, string>
+            {
+                ["component"] = component,
+                ["model"] = modelPath,
+                ["backend"] = "cpu"
+            });
+            return cpuSession;
         }
 
         private Dictionary<string, object> LoadSpk2Info(string spk2infoPath)

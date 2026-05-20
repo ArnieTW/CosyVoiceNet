@@ -16,14 +16,37 @@ namespace CosyVoiceNet.Utils
 
         public SpeechTokenExtractor(string modelPath, bool useCuda = false, int deviceId = 0)
         {
-            var opts = new SessionOptions();
-            opts.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
-            opts.IntraOpNumThreads = 1;
             if (useCuda)
             {
-                opts.AppendExecutionProvider_CUDA(deviceId);
+                try
+                {
+                    var cudaOptions = CreateOptions();
+                    cudaOptions.AppendExecutionProvider_CUDA(deviceId);
+                    _session = new InferenceSession(modelPath, cudaOptions);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[CosyVoice] SpeechTokenExtractor ONNX CUDA initialization failed. Falling back to CPU. {ex.Message}");
+                }
             }
-            _session = new InferenceSession(modelPath, opts);
+
+            _session = new InferenceSession(modelPath, CreateOptions());
+        }
+
+        private static SessionOptions CreateOptions()
+        {
+            EnsureOnnxRuntimeEnvironment();
+            return new SessionOptions
+            {
+                GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
+                IntraOpNumThreads = 1
+            };
+        }
+
+        private static void EnsureOnnxRuntimeEnvironment()
+        {
+            _ = OrtEnv.Instance();
         }
 
         public (TorchSharp.torch.Tensor tokens, TorchSharp.torch.Tensor lengths) Inference(TorchSharp.torch.Tensor feat, TorchSharp.torch.Tensor featLengths)
@@ -64,12 +87,39 @@ namespace CosyVoiceNet.Utils
         private readonly InferenceSession _session;
         private readonly int _maxLen = 10 * 16000;
 
-        public EmbeddingExtractor(string modelPath)
+        public EmbeddingExtractor(string modelPath, bool useCuda = false, int deviceId = 0)
         {
-            var opts = new SessionOptions();
-            opts.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
-            opts.IntraOpNumThreads = 1;
-            _session = new InferenceSession(modelPath, opts);
+            if (useCuda)
+            {
+                try
+                {
+                    var cudaOptions = CreateOptions();
+                    cudaOptions.AppendExecutionProvider_CUDA(deviceId);
+                    _session = new InferenceSession(modelPath, cudaOptions);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[CosyVoice] EmbeddingExtractor ONNX CUDA initialization failed. Falling back to CPU. {ex.Message}");
+                }
+            }
+
+            _session = new InferenceSession(modelPath, CreateOptions());
+        }
+
+        private static SessionOptions CreateOptions()
+        {
+            EnsureOnnxRuntimeEnvironment();
+            return new SessionOptions
+            {
+                GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
+                IntraOpNumThreads = 1
+            };
+        }
+
+        private static void EnsureOnnxRuntimeEnvironment()
+        {
+            _ = OrtEnv.Instance();
         }
 
         public TorchSharp.torch.Tensor Inference(TorchSharp.torch.Tensor speech)

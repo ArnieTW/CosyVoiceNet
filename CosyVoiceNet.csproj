@@ -13,19 +13,8 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Compile Remove="Tests\**\*.cs" />
-    <None Remove="Tests\**\*" />
-    <EmbeddedResource Remove="Tests\**\*" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\Utilities\PickleUnpickler.cs" Link="Utilities\PickleUnpickler.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="HuggingfaceHub" Version="0.1.3" />
     <PackageReference Include="Humanizer" Version="3.0.10" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.18.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Parquet.Net" Version="5.5.0" />
     <PackageReference Include="Razorvine.Pickle" Version="1.5.0" />
@@ -57,10 +46,13 @@
   <PropertyGroup>
     <!-- default: pull CUDA native runtime during restore; set false for CPU-only builds -->
     <TorchUseCuda>true</TorchUseCuda>
+    <OnnxUseCuda Condition="'$(OnnxUseCuda)' == ''">$(TorchUseCuda)</OnnxUseCuda>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="TorchSharp-cpu" Version="0.106.0" Condition="'$(TorchUseCuda)' != 'true' OR !$([MSBuild]::IsOSPlatform('Windows'))" />
     <PackageReference Include="TorchSharp-cuda-windows" Version="0.106.0" Condition="'$(TorchUseCuda)' == 'true' AND $([MSBuild]::IsOSPlatform('Windows'))" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.25.1" Condition="'$(OnnxUseCuda)' != 'true' OR !$([MSBuild]::IsOSPlatform('Windows'))" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.25.1" Condition="'$(OnnxUseCuda)' == 'true' AND $([MSBuild]::IsOSPlatform('Windows'))" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 

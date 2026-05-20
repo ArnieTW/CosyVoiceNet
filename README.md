@@ -49,12 +49,22 @@ dotnet build CosyVoiceNet\CosyVoiceNet.csproj
 ```
 
 The default Windows build references the CUDA TorchSharp runtime package. A
-caller can still force CPU at runtime with `CosyVoiceBackend.Cpu`.
+caller can still force CPU at runtime with `CosyVoiceBackend.Cpu`. CUDA-capable
+Windows builds also reference ONNX Runtime GPU so the prompt-audio ONNX models
+can try CUDA when the resolved backend is CUDA. If an ONNX CUDA provider cannot
+initialize on a machine, CosyVoiceNet falls back to CPU for that ONNX session.
 
 For a CPU-only build:
 
 ```powershell
 dotnet build CosyVoiceNet\CosyVoiceNet.csproj -p:TorchUseCuda=false
+```
+
+To explicitly disable only ONNX CUDA binaries while keeping the Torch CUDA
+runtime:
+
+```powershell
+dotnet build CosyVoiceNet\CosyVoiceNet.csproj -p:OnnxUseCuda=false
 ```
 
 ## Timings
